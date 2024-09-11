@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, Button, StyleSheet, Alert } from "react-native";
 import CheckBox from "expo-checkbox";
+import { useAuth } from "../context/AuthContext"; // Usar o contexto
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function LoginScreen({ navigation }) {
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
-	const [isSelected, setSelection] = useState(false);
+	const { login } = useAuth(); // Pega a função de login do contexto
 
 	const handleLogin = async () => {
 		try {
@@ -25,15 +26,14 @@ export default function LoginScreen({ navigation }) {
 			const data = await response.json();
 
 			if (response.ok) {
-				console.log("Login successful", data);
-				await AsyncStorage.setItem("userToken", data.token);
+				await login(data.token, data.user);
+				console.log("Login successful", data.token);
+				console.log("Login successful", data.user);
 
 				// Optionally save user ID if returned from API
 				// if (data.user && data.user.id) {
 				// 	await AsyncStorage.setItem("userId", data.user.id.toString());
 				// }
-
-				console.log(data.user);
 
 				navigation.navigate("ShoppingList");
 			} else {
@@ -60,13 +60,13 @@ export default function LoginScreen({ navigation }) {
 				value={password}
 				onChangeText={(text) => setPassword(text)}
 			/>
-			<View style={styles.checkboxContainer}>
+			{/* <View style={styles.checkboxContainer}>
 				<CheckBox
 					value={isSelected}
 					onValueChange={(newValue) => setSelection(newValue)}
 				/>
 				<Text style={styles.label}>Keep me logged in</Text>
-			</View>
+			</View> */}
 			<Button title="Login" onPress={handleLogin} />
 			<Button
 				title="Register"

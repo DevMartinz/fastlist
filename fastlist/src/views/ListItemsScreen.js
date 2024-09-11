@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import ListItem from "../components/ListItem"; // Importe o componente ListItem
 
 const ListItemsScreen = ({ route }) => {
 	const { listId } = route.params;
@@ -56,6 +57,7 @@ const ListItemsScreen = ({ route }) => {
 			setItemValue("");
 			setItemQuantity("");
 			setModalVisible(false);
+
 			// Refresh items
 			const response = await axios.get(
 				`http://192.168.100.7:8000/api/shopping-lists/${listId}/products`,
@@ -74,13 +76,7 @@ const ListItemsScreen = ({ route }) => {
 			<Button title="Add Item" onPress={() => setModalVisible(true)} />
 			<FlatList
 				data={items}
-				renderItem={({ item }) => (
-					<View style={styles.item}>
-						<Text>Name: {item.name}</Text>
-						<Text>Value: {item.value}</Text>
-						<Text>Quantity: {item.quantity}</Text>
-					</View>
-				)}
+				renderItem={({ item }) => <ListItem data={item} />}
 				keyExtractor={(item) => item.id.toString()}
 			/>
 

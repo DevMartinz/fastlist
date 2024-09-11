@@ -3,38 +3,50 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\ShoppingList;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
-    public function index()
+    // Listar produtos de uma lista específica
+    public function indexForList($listId)
     {
-        $products = Product::all();
+        // Valida se a lista de compras existe
+        $list = ShoppingList::findOrFail($listId);
+
+        // Assume que há um relacionamento entre ShoppingList e Product
+        $products = $list->products; // Obtém produtos associados à lista
+
         return response()->json($products);
     }
 
-    public function store(Request $request)
+//     public function index($listId)
+// {
+//     $items = Product::where('shopping_list_id', $listId)->get(); // Filtra por lista
+//     return response()->json($items);
+// }
+
+
+    // Adicionar produto a uma lista específica
+    public function storeForList(Request $request, $listId)
     {
-        $product = Product::create($request->all());
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'value' => 'required|numeric',
+            'quantity' => 'required|integer',
+        ]);
+
+        // Valida se a lista de compras existe
+        $list = ShoppingList::findOrFail($listId);
+
+    // Cria o produto e associa à lista de compras
+    $product = $list->products()->create([
+        'name' => $request->name,
+        'value' => $request->value,
+        'quantity' => $request->quantity,
+        'shopping_list_id' => $listId,
+    ]);
+
         return response()->json($product, 201);
-    }
-
-    public function show($id)
-    {
-        $product = Product::findOrFail($id);
-        return response()->json($product);
-    }
-
-    public function update(Request $request, $id)
-    {
-        $product = Product::findOrFail($id);
-        $product->update($request->all());
-        return response()->json(['message' => 'Product updated successfully']);
-    }
-
-    public function destroy($id)
-    {
-        Product::findOrFail($id)->delete();
-        return response()->json(['message' => 'Product deleted successfully']);
     }
 }

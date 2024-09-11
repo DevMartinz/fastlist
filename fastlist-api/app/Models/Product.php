@@ -9,7 +9,14 @@ class Product extends Model
 {
     use HasFactory;
 
-    public function shopping_lists(){
+    protected $fillable = [
+        'name',
+        'value',
+        'quantity',
+        'shopping_list_id', // Adicione isso para preencher o campo ao criar o produto
+    ];
+
+    public function shoppingList(){
         return $this->belongsTo(ShoppingList::class);
 }
 

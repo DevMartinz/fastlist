@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
 	View,
 	Text,
@@ -11,9 +11,10 @@ import {
 	Alert,
 } from "react-native";
 import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useAuth } from "../context/AuthContext"; // Importe o contexto de autenticação
 
 const ShoppingList = ({ navigation }) => {
+	const { user, token, logout } = useAuth(); // Obtenha os dados do usuário e o token do contexto
 	const [shoppingLists, setShoppingLists] = useState([]);
 	const [modalVisible, setModalVisible] = useState(false);
 	const [newListName, setNewListName] = useState("");
@@ -22,8 +23,6 @@ const ShoppingList = ({ navigation }) => {
 	useEffect(() => {
 		const fetchShoppingLists = async () => {
 			try {
-				const token = await AsyncStorage.getItem("userToken");
-				console.log("User token:", token);
 				if (!token) {
 					throw new Error("Token is missing");
 				}
@@ -34,18 +33,16 @@ const ShoppingList = ({ navigation }) => {
 					}
 				);
 				setShoppingLists(response.data);
-				console.log(response.data);
 			} catch (err) {
 				console.error("Error fetching shopping lists:", err);
 			}
 		};
 
 		fetchShoppingLists();
-	}, []);
+	}, [token]);
 
 	const handleCreateList = async () => {
 		try {
-			const token = await AsyncStorage.getItem("userToken");
 			if (!token) {
 				throw new Error("Token is missing");
 			}
@@ -57,21 +54,30 @@ const ShoppingList = ({ navigation }) => {
 					headers: {
 						Accept: "application/json",
 						"Content-Type": "application/json",
-						Authorization: `Bearer ${token}`, // Inclua o token corretamente
+						Authorization: `Bearer ${token}`,
 					},
 					body: JSON.stringify({
-						name: newListName, // Dados da nova lista
+						name: newListName,
 					}),
 				}
 			);
 
 			const data = await response.json();
 
-			if (response.ok) {
-				// Atualize as listas após criar uma nova
+			console.log("Response:", data); // Adicione esta linha para depuração
+
+			if (
+				response.ok &&
+				data.message === "Shopping list created successfully"
+			) {
 				setShoppingLists([...shoppingLists, data.shoppingList]);
+				setNewListName("");
+				setModalVisible(false);
 			} else {
-				Alert.alert("Error creating list", data.message);
+				Alert.alert(
+					"Error creating list",
+					data.message || "Something went wrong"
+				);
 			}
 		} catch (error) {
 			Alert.alert("An error occurred", error.message);
@@ -80,13 +86,21 @@ const ShoppingList = ({ navigation }) => {
 
 	const handleLogout = async () => {
 		try {
-			await AsyncStorage.removeItem("userToken");
-			await AsyncStorage.removeItem("userId"); // Remova o userId também
-			navigation.navigate("Login"); // Redireciona para a tela de login
+			await logout(); // Usando o logout do contexto
+			navigation.navigate("Login"); // Redirecionando para a tela de login
 		} catch (error) {
 			console.error("Failed to logout", error);
 		}
 	};
+
+	if (!user) {
+		// Exibe mensagem de carregamento ou redireciona para o login se o usuário não estiver autenticado
+		return (
+			<View style={styles.container}>
+				<Text>Loading...</Text>
+			</View>
+		);
+	}
 
 	return (
 		<View style={styles.container}>

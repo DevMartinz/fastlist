@@ -4,17 +4,25 @@ namespace App\Http\Controllers;
 
 use App\Models\ShoppingList;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class ShoppingListController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $shopping_lists = ShoppingList::all();
+        // Obtém o usuário autenticado
+        $user = $request->user();
+    
+        // Filtra as listas associadas ao user_id do usuário autenticado
+        $shopping_lists = ShoppingList::where('user_id', $user->id)->get();
+    
         return response()->json($shopping_lists);
     }
 
     public function store(Request $request)
     {
+
+        \Log::info('Store method called', $request->all());
         $request->validate([
             'name' => 'required|string|max:255',
         ]);
@@ -26,13 +34,15 @@ class ShoppingListController extends Controller
             return response()->json(['message' => 'Unauthorized'], 401);
         }
     
-        // Criar uma nova lista de compras associada ao usuário autenticado
-        $shoppingList = new ShoppingList();
-        $shoppingList->name = $request->name;
-        $shoppingList->user_id = $user->id; // Associar a lista ao usuário
-        $shoppingList->save();
+        $shoppingList = ShoppingList::create([
+            'name' => $request->name,
+            'user_id' => $user->id,
+        ]);
     
-        return response()->json(['message' => 'Shopping list created successfully'], 201);
+        return response()->json([
+            'message' => 'Shopping list created successfully',
+            'shoppingList' => $shoppingList
+        ], 201);
     }
 
     public function show($id)

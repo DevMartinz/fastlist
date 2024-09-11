@@ -5,8 +5,9 @@ const ListItem = ({ data }) => {
 	return (
 		<TouchableOpacity style={styles.item}>
 			<View style={styles.itemInfo}>
+				<Text style={styles.itemP2}>x {data.quantity}</Text>
 				<Text style={styles.itemP1}>{data.name}</Text>
-				<Text style={styles.itemP2}>R$ {data.valor}</Text>
+				<Text style={styles.itemP2}>R$ {data.value}</Text>
 			</View>
 		</TouchableOpacity>
 	);
