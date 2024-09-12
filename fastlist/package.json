@@ -16,14 +16,15 @@
     "@react-navigation/stack": "^6.4.1",
     "axios": "^1.7.7",
     "expo": "~51.0.26",
+    "expo-checkbox": "~3.0.0",
     "expo-status-bar": "~1.12.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-native": "0.74.5",
     "react-native-gesture-handler": "^2.18.1",
     "react-native-table-component": "^1.2.2",
-    "react-native-web": "~0.19.10",
-    "expo-checkbox": "~3.0.0"
+    "react-native-vector-icons": "^10.1.0",
+    "react-native-web": "~0.19.10"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"

@@ -7,6 +7,7 @@ import {
 	TextInput,
 	StyleSheet,
 	Modal,
+	TouchableOpacity, // para usar no item
 } from "react-native";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -19,6 +20,7 @@ const ListItemsScreen = ({ route }) => {
 	const [itemName, setItemName] = useState("");
 	const [itemValue, setItemValue] = useState("");
 	const [itemQuantity, setItemQuantity] = useState("");
+	const [selectedItemId, setSelectedItemId] = useState(null);
 
 	useEffect(() => {
 		const fetchItems = async () => {
@@ -42,23 +44,69 @@ const ListItemsScreen = ({ route }) => {
 	const handleAddItem = async () => {
 		const token = await AsyncStorage.getItem("userToken");
 		try {
-			await axios.post(
-				`http://192.168.100.7:8000/api/shopping-lists/${listId}/products`,
-				{
-					name: itemName,
-					value: itemValue,
-					quantity: itemQuantity,
-				},
-				{
-					headers: { Authorization: `Bearer ${token}` },
-				}
-			);
+			if (selectedItemId) {
+				// Se um item foi selecionado, estamos editando
+				await axios.put(
+					`http://192.168.100.7:8000/api/products/${selectedItemId}`,
+					{
+						name: itemName,
+						value: itemValue,
+						quantity: itemQuantity,
+					},
+					{
+						headers: { Authorization: `Bearer ${token}` },
+					}
+				);
+			} else {
+				// Se nenhum item foi selecionado, estamos adicionando um novo
+				await axios.post(
+					`http://192.168.100.7:8000/api/shopping-lists/${listId}/products`,
+					{
+						name: itemName,
+						value: itemValue,
+						quantity: itemQuantity,
+					},
+					{
+						headers: { Authorization: `Bearer ${token}` },
+					}
+				);
+			}
+
 			setItemName("");
 			setItemValue("");
 			setItemQuantity("");
 			setModalVisible(false);
+			setSelectedItemId(null);
 
 			// Refresh items
+			const response = await axios.get(
+				`http://192.168.100.7:8000/api/shopping-lists/${listId}/products`,
+				{
+					headers: { Authorization: `Bearer ${token}` },
+				}
+			);
+			setItems(response.data);
+		} catch (error) {
+			console.error(error);
+		}
+	};
+
+	const handleEditItem = (item) => {
+		setSelectedItemId(item.id);
+		setItemName(item.name);
+		setItemValue(item.value.toString());
+		setItemQuantity(item.quantity.toString());
+		setModalVisible(true);
+	};
+
+	const handleDeleteItem = async (itemId) => {
+		const token = await AsyncStorage.getItem("userToken");
+		try {
+			await axios.delete(`http://192.168.100.7:8000/api/products/${itemId}`, {
+				headers: { Authorization: `Bearer ${token}` },
+			});
+
+			// Atualizar a lista de itens após a exclusão
 			const response = await axios.get(
 				`http://192.168.100.7:8000/api/shopping-lists/${listId}/products`,
 				{
@@ -76,7 +124,11 @@ const ListItemsScreen = ({ route }) => {
 			<Button title="Add Item" onPress={() => setModalVisible(true)} />
 			<FlatList
 				data={items}
-				renderItem={({ item }) => <ListItem data={item} />}
+				renderItem={({ item }) => (
+					<TouchableOpacity onPress={() => handleEditItem(item)}>
+						<ListItem data={item} onDelete={() => handleDeleteItem(item.id)} />
+					</TouchableOpacity>
+				)}
 				keyExtractor={(item) => item.id.toString()}
 			/>
 
@@ -107,7 +159,10 @@ const ListItemsScreen = ({ route }) => {
 						keyboardType="numeric"
 						style={styles.input}
 					/>
-					<Button title="Add Item" onPress={handleAddItem} />
+					<Button
+						title={selectedItemId ? "Update Item" : "Add Item"}
+						onPress={handleAddItem}
+					/>
 					<Button title="Cancel" onPress={() => setModalVisible(false)} />
 				</View>
 			</Modal>

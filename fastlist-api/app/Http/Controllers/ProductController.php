@@ -20,13 +20,6 @@ class ProductController extends Controller
         return response()->json($products);
     }
 
-//     public function index($listId)
-// {
-//     $items = Product::where('shopping_list_id', $listId)->get(); // Filtra por lista
-//     return response()->json($items);
-// }
-
-
     // Adicionar produto a uma lista específica
     public function storeForList(Request $request, $listId)
     {
@@ -39,14 +32,48 @@ class ProductController extends Controller
         // Valida se a lista de compras existe
         $list = ShoppingList::findOrFail($listId);
 
-    // Cria o produto e associa à lista de compras
-    $product = $list->products()->create([
-        'name' => $request->name,
-        'value' => $request->value,
-        'quantity' => $request->quantity,
-        'shopping_list_id' => $listId,
-    ]);
+        // Cria o produto e associa à lista de compras
+        $product = $list->products()->create([
+            'name' => $request->name,
+            'value' => $request->value,
+            'quantity' => $request->quantity,
+            'shopping_list_id' => $listId,
+        ]);
 
         return response()->json($product, 201);
+    }
+
+    // Atualizar produto específico
+    public function update(Request $request, $productId)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'value' => 'required|numeric',
+            'quantity' => 'required|integer',
+        ]);
+
+        // Encontra o produto
+        $product = Product::findOrFail($productId);
+
+        // Atualiza os dados do produto
+        $product->update([
+            'name' => $request->name,
+            'value' => $request->value,
+            'quantity' => $request->quantity,
+        ]);
+
+        return response()->json($product, 200);
+    }
+
+    // Remover produto específico
+    public function destroy($productId)
+    {
+        // Encontra o produto
+        $product = Product::findOrFail($productId);
+
+        // Remove o produto
+        $product->delete();
+
+        return response()->json(['message' => 'Produto removido com sucesso'], 200);
     }
 }

@@ -1,15 +1,14 @@
 import React from "react";
-import { TouchableOpacity, View, Text, StyleSheet } from "react-native";
+import { TouchableOpacity, View, Button, Text, StyleSheet } from "react-native";
 
-const ListItem = ({ data }) => {
+const ListItem = ({ data, onDelete }) => {
 	return (
-		<TouchableOpacity style={styles.item}>
-			<View style={styles.itemInfo}>
-				<Text style={styles.itemP2}>x {data.quantity}</Text>
-				<Text style={styles.itemP1}>{data.name}</Text>
-				<Text style={styles.itemP2}>R$ {data.value}</Text>
-			</View>
-		</TouchableOpacity>
+		<View style={styles.item}>
+			<Text style={styles.itemP2}>x {data.quantity}</Text>
+			<Text style={styles.itemP1}>{data.name}</Text>
+			<Text style={styles.itemP2}>R$ {data.value}</Text>
+			<Button title="Delete" onPress={onDelete} />
+		</View>
 	);
 };
 
@@ -21,6 +20,10 @@ const styles = StyleSheet.create({
 		borderBottomWidth: 1,
 		borderBottomColor: "#a6a6a6",
 		paddingVertical: 10,
+		flex: 1,
+		flexDirection: "row",
+		justifyContent: "space-between",
+		alignItems: "center",
 	},
 	itemInfo: {
 		flex: 1,

@@ -53,9 +53,25 @@ class ShoppingListController extends Controller
 
     public function update(Request $request, $id)
     {
-        $shopping_lists = ShoppingList::findOrFail($id);
-        $shopping_lists->update($request->all());
-        return response()->json(['message' => 'List updated successfully']);
+        // Validação do nome
+        $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
+    
+        // Encontrar a lista pelo ID
+        $shoppingList = ShoppingList::find($id);
+    
+        // Verificar se a lista existe
+        if (!$shoppingList) {
+            return response()->json(['message' => 'Shopping list not found'], 404);
+        }
+    
+        // Atualizar o nome da lista
+        $shoppingList->name = $request->input('name');
+        $shoppingList->save();
+    
+        // Retornar uma resposta de sucesso
+        return response()->json(['message' => 'Shopping list updated successfully']);
     }
 
     public function destroy($id)
