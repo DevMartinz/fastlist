@@ -1,8 +1,17 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, Button, StyleSheet, Alert } from "react-native";
+import {
+	View,
+	Text,
+	TextInput,
+	Button,
+	StyleSheet,
+	Alert,
+	Image,
+} from "react-native";
 import CheckBox from "expo-checkbox";
 import { useAuth } from "../context/AuthContext"; // Usar o contexto
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import CustomButton from "../components/CustomButton";
 
 export default function LoginScreen({ navigation }) {
 	const [email, setEmail] = useState("");
@@ -10,6 +19,14 @@ export default function LoginScreen({ navigation }) {
 	const { login } = useAuth(); // Pega a função de login do contexto
 
 	const handleLogin = async () => {
+		if (!email || !password) {
+			Alert.alert(
+				"Campos obrigatórios",
+				"Por favor, preencha todos os campos."
+			);
+			return;
+		}
+
 		try {
 			const response = await fetch("http://192.168.100.7:8000/api/login", {
 				method: "POST",
@@ -30,23 +47,23 @@ export default function LoginScreen({ navigation }) {
 				console.log("Login successful", data.token);
 				console.log("Login successful", data.user);
 
-				// Optionally save user ID if returned from API
-				// if (data.user && data.user.id) {
-				// 	await AsyncStorage.setItem("userId", data.user.id.toString());
-				// }
-
 				navigation.navigate("ShoppingList");
 			} else {
-				Alert.alert("Login failed", data.message);
+				Alert.alert("Erro no Login: ", data.message);
 			}
 		} catch (error) {
-			Alert.alert("An error occurred", error.message);
+			Alert.alert("Ocorreu um erro: ", error.message);
 		}
 	};
 
 	return (
 		<View style={styles.container}>
-			<Text style={styles.title}>Login</Text>
+			{/* Adicionando a imagem */}
+			<Image
+				source={require("../../assets/logo.png")} // Substitua com o caminho da sua imagem
+				style={styles.logo}
+			/>
+			<Text style={styles.title}>FastList</Text>
 			<TextInput
 				style={styles.input}
 				placeholder="Email"
@@ -55,7 +72,7 @@ export default function LoginScreen({ navigation }) {
 			/>
 			<TextInput
 				style={styles.input}
-				placeholder="Password"
+				placeholder="Senha"
 				secureTextEntry
 				value={password}
 				onChangeText={(text) => setPassword(text)}
@@ -67,9 +84,9 @@ export default function LoginScreen({ navigation }) {
 				/>
 				<Text style={styles.label}>Keep me logged in</Text>
 			</View> */}
-			<Button title="Login" onPress={handleLogin} />
-			<Button
-				title="Register"
+			<CustomButton title="Login" onPress={handleLogin} />
+			<CustomButton
+				title="Cadastro"
 				onPress={() => navigation.navigate("Register")}
 			/>
 		</View>
@@ -83,6 +100,11 @@ const styles = StyleSheet.create({
 		padding: 16,
 		backgroundColor: "#fff",
 	},
+	logo: {
+		width: 150,
+		height: 150,
+		alignSelf: "center",
+	},
 	title: {
 		fontSize: 24,
 		marginBottom: 16,
@@ -94,11 +116,6 @@ const styles = StyleSheet.create({
 		borderBottomWidth: 1,
 		marginBottom: 12,
 		paddingHorizontal: 8,
-	},
-	checkboxContainer: {
-		flexDirection: "row",
-		alignItems: "center",
-		marginBottom: 16,
 	},
 	label: {
 		margin: 8,

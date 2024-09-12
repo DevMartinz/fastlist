@@ -21,6 +21,9 @@ const ListItemsScreen = ({ route }) => {
 	const [itemValue, setItemValue] = useState("");
 	const [itemQuantity, setItemQuantity] = useState("");
 	const [selectedItemId, setSelectedItemId] = useState(null);
+	const [errorName, setErrorName] = useState("");
+	const [errorValue, setErrorValue] = useState("");
+	const [errorQuantity, setErrorQuantity] = useState("");
 
 	useEffect(() => {
 		const fetchItems = async () => {
@@ -42,7 +45,44 @@ const ListItemsScreen = ({ route }) => {
 	}, [listId]);
 
 	const handleAddItem = async () => {
+		let hasError = false;
+
+		// Reset errors
+		setErrorName("");
+		setErrorValue("");
+		setErrorQuantity("");
+
+		// Verifica se o nome está preenchido
+		if (!itemName) {
+			setErrorName("O nome do item é obrigatório.");
+			hasError = true;
+		}
+
+		// Verifica se o valor está preenchido
+		if (!itemValue) {
+			setErrorValue("O valor do item é obrigatório.");
+			hasError = true;
+		}
+
+		// Verifica se a quantidade está preenchida
+		if (!itemQuantity) {
+			setErrorQuantity("A quantidade do item é obrigatória.");
+			hasError = true;
+		}
+
+		// Se algum campo estiver vazio, não envia os dados
+		if (hasError) {
+			return;
+		}
+
 		const token = await AsyncStorage.getItem("userToken");
+
+		// Remove o prefixo 'R$' e os pontos do valor antes de enviar para o backend
+		const cleanedValue = itemValue
+			.replace("R$ ", "")
+			.replace(/\./g, "")
+			.replace(",", ".");
+
 		try {
 			if (selectedItemId) {
 				// Se um item foi selecionado, estamos editando
@@ -50,7 +90,7 @@ const ListItemsScreen = ({ route }) => {
 					`http://192.168.100.7:8000/api/products/${selectedItemId}`,
 					{
 						name: itemName,
-						value: itemValue,
+						value: cleanedValue,
 						quantity: itemQuantity,
 					},
 					{
@@ -63,7 +103,7 @@ const ListItemsScreen = ({ route }) => {
 					`http://192.168.100.7:8000/api/shopping-lists/${listId}/products`,
 					{
 						name: itemName,
-						value: itemValue,
+						value: cleanedValue,
 						quantity: itemQuantity,
 					},
 					{
@@ -72,6 +112,7 @@ const ListItemsScreen = ({ route }) => {
 				);
 			}
 
+			// Limpa os campos e fecha o modal após o envio
 			setItemName("");
 			setItemValue("");
 			setItemQuantity("");
@@ -119,9 +160,34 @@ const ListItemsScreen = ({ route }) => {
 		}
 	};
 
+	const handleCloseModal = () => {
+		setItemName(""); // Limpa o campo de nome
+		setItemValue(""); // Limpa o campo de valor
+		setItemQuantity(""); // Limpa o campo de quantidade
+		setSelectedItemId(null); // Remove o ID selecionado
+		setModalVisible(false); // Fecha o modal
+	};
+
+	const formatCurrency = (value) => {
+		let newValue = value.replace(/\D/g, ""); // Remove qualquer caractere que não seja dígito
+		newValue = (newValue / 100).toFixed(2) + ""; // Divide por 100 para adicionar duas casas decimais
+		newValue = newValue.replace(".", ","); // Troca o ponto por vírgula
+		newValue = newValue.replace(/\B(?=(\d{3})+(?!\d))/g, "."); // Adiciona o ponto como separador de milhar
+		return newValue ? `R$ ${newValue}` : ""; // Adiciona o prefixo 'R$' se houver valor
+	};
+
 	return (
 		<View style={styles.container}>
-			<Button title="Add Item" onPress={() => setModalVisible(true)} />
+			<Button
+				title="Add Item"
+				onPress={() => {
+					setItemName("");
+					setItemValue("");
+					setItemQuantity("");
+					setSelectedItemId(null); // Remove qualquer item selecionado
+					setModalVisible(true);
+				}}
+			/>
 			<FlatList
 				data={items}
 				renderItem={({ item }) => (
@@ -136,34 +202,41 @@ const ListItemsScreen = ({ route }) => {
 				visible={modalVisible}
 				transparent={true}
 				animationType="slide"
-				onRequestClose={() => setModalVisible(false)}
+				onRequestClose={handleCloseModal}
 			>
 				<View style={styles.modalContainer}>
 					<TextInput
-						placeholder="Item Name"
+						placeholder="Nome do Produto"
 						value={itemName}
 						onChangeText={setItemName}
 						style={styles.input}
 					/>
+					{errorName ? <Text style={styles.errorText}>{errorName}</Text> : null}
 					<TextInput
-						placeholder="Value"
+						placeholder="R$ 0,00"
 						value={itemValue}
-						onChangeText={setItemValue}
+						onChangeText={(value) => setItemValue(formatCurrency(value))}
 						keyboardType="numeric"
 						style={styles.input}
 					/>
+					{errorValue ? (
+						<Text style={styles.errorText}>{errorValue}</Text>
+					) : null}
 					<TextInput
-						placeholder="Quantity"
+						placeholder="Quantidade"
 						value={itemQuantity}
 						onChangeText={setItemQuantity}
 						keyboardType="numeric"
 						style={styles.input}
 					/>
+					{errorQuantity ? (
+						<Text style={styles.errorText}>{errorQuantity}</Text>
+					) : null}
 					<Button
 						title={selectedItemId ? "Update Item" : "Add Item"}
 						onPress={handleAddItem}
 					/>
-					<Button title="Cancel" onPress={() => setModalVisible(false)} />
+					<Button title="Cancel" onPress={handleCloseModal} />
 				</View>
 			</Modal>
 		</View>
