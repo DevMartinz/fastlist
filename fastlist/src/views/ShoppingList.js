@@ -13,6 +13,8 @@ import {
 import axios from "axios";
 import Icon from "react-native-vector-icons/Ionicons"; // Adicione o ícone
 import { useAuth } from "../context/AuthContext";
+import { Menu, MenuItem } from "react-native-material-menu";
+import CustomButton from "../components/CustomButton";
 
 const ShoppingList = ({ navigation }) => {
 	const { user, token, logout } = useAuth();
@@ -24,6 +26,7 @@ const ShoppingList = ({ navigation }) => {
 	const [editListModalVisible, setEditListModalVisible] = useState(false); // Para o modal de renomear
 	const [editListName, setEditListName] = useState(""); // Para o nome da lista a ser renomeada
 	const [error, setError] = useState("");
+	const [menuVisible, setMenuVisible] = useState(false);
 
 	useEffect(() => {
 		const fetchShoppingLists = async () => {
@@ -47,6 +50,31 @@ const ShoppingList = ({ navigation }) => {
 
 		fetchShoppingLists();
 	}, [token]);
+
+	// Função para alternar a visibilidade do menu
+	const toggleMenu = () => {
+		setMenuVisible(!menuVisible);
+	};
+
+	// Configurar o ícone de três pontinhos na barra de navegação
+	useEffect(() => {
+		navigation.setOptions({
+			headerLeft: () => null, // Remove o botão de voltar
+			headerRight: () => (
+				<Menu
+					visible={menuVisible}
+					anchor={
+						<TouchableOpacity onPress={toggleMenu} style={{ paddingRight: 16 }}>
+							<Icon name="ellipsis-vertical" size={24} color="black" />
+						</TouchableOpacity>
+					}
+					onRequestClose={toggleMenu}
+				>
+					<MenuItem onPress={handleLogout}>Logout</MenuItem>
+				</Menu>
+			),
+		});
+	}, [menuVisible, navigation]);
 
 	const handleCreateList = async () => {
 		try {
@@ -150,8 +178,7 @@ const ShoppingList = ({ navigation }) => {
 
 	return (
 		<View style={styles.container}>
-			<Button title="Add New List" onPress={() => setModalVisible(true)} />
-			<Button title="Logout" onPress={handleLogout} color="red" />
+			{/* <Button title="Logout" onPress={handleLogout} color="red" /> */}
 
 			<FlatList
 				data={shoppingLists}
@@ -185,14 +212,23 @@ const ShoppingList = ({ navigation }) => {
 			>
 				<View style={styles.modalView}>
 					<TextInput
-						placeholder="Enter list name"
+						placeholder="Digite o nome da Lista"
 						value={newListName}
 						onChangeText={setNewListName}
 						style={styles.input}
 					/>
 					{error ? <Text style={styles.errorText}>{error}</Text> : null}
-					<Button title="Create List" onPress={handleCreateList} />
-					<Button title="Cancel" onPress={() => setModalVisible(false)} />
+					<View style={styles.modalButtons}>
+						<View style={styles.buttonWrapper}>
+							<CustomButton title="Criar Lista" onPress={handleCreateList} />
+						</View>
+						<View style={styles.buttonWrapper}>
+							<CustomButton
+								title="Cancelar"
+								onPress={() => setModalVisible(false)}
+							/>
+						</View>
+					</View>
 				</View>
 			</Modal>
 
@@ -204,8 +240,9 @@ const ShoppingList = ({ navigation }) => {
 				onRequestClose={() => setShowOptionsModal(false)}
 			>
 				<View style={styles.optionsModal}>
-					<Button
-						title="Rename List"
+					<CustomButton
+						title="Renomear Lista"
+						color="#B8860B"
 						onPress={() => {
 							handleRenameList(
 								selectedListId,
@@ -214,11 +251,15 @@ const ShoppingList = ({ navigation }) => {
 							setShowOptionsModal(false);
 						}}
 					/>
-					<Button
-						title="Delete List"
+					<CustomButton
+						title="Apagar Lista"
+						color="#B22222"
 						onPress={() => handleDeleteList(selectedListId)}
 					/>
-					<Button title="Cancel" onPress={() => setShowOptionsModal(false)} />
+					<CustomButton
+						title="Cancelar"
+						onPress={() => setShowOptionsModal(false)}
+					/>
 				</View>
 			</Modal>
 
@@ -231,18 +272,35 @@ const ShoppingList = ({ navigation }) => {
 			>
 				<View style={styles.modalView}>
 					<TextInput
-						placeholder="Enter new list name"
+						placeholder="Digite o novo nome da Lista"
 						value={editListName}
 						onChangeText={setEditListName}
 						style={styles.input}
 					/>
-					<Button title="Save" onPress={submitRenameList} />
-					<Button
-						title="Cancel"
-						onPress={() => setEditListModalVisible(false)}
-					/>
+					<View style={styles.modalButtons}>
+						<View style={styles.buttonWrapper}>
+							<CustomButton title="Salvar" onPress={submitRenameList} />
+						</View>
+						<View style={styles.buttonWrapper}>
+							<CustomButton
+								title="Cancelar"
+								onPress={() => setEditListModalVisible(false)}
+							/>
+						</View>
+					</View>
 				</View>
 			</Modal>
+
+			{/* Botão flutuante para adicionar nova lista */}
+			<TouchableOpacity
+				style={styles.floatingButton}
+				onPress={() => setModalVisible(true)}
+			>
+				<View style={styles.floatingButtonContent}>
+					<Icon name="add" size={24} color="#fff" />
+					<Text style={styles.floatingButtonText}>Nova Lista</Text>
+				</View>
+			</TouchableOpacity>
 		</View>
 	);
 };
@@ -271,6 +329,14 @@ const styles = StyleSheet.create({
 		shadowRadius: 4,
 		elevation: 5,
 	},
+	modalButtons: {
+		flexDirection: "row",
+		marginTop: 10,
+	},
+	buttonWrapper: {
+		flex: 1,
+		marginHorizontal: 5,
+	},
 	optionsModal: {
 		position: "absolute",
 		bottom: 0,
@@ -282,6 +348,28 @@ const styles = StyleSheet.create({
 	},
 	input: { width: "100%", padding: 10, borderColor: "#ccc", borderWidth: 1 },
 	errorText: { color: "red" },
+	floatingButton: {
+		position: "absolute",
+		bottom: 45,
+		right: 15,
+		backgroundColor: "#4682B4",
+		flexDirection: "row",
+		borderRadius: 28,
+		justifyContent: "center",
+		alignItems: "center",
+		paddingHorizontal: 16,
+		paddingVertical: 10,
+		elevation: 4,
+	},
+	floatingButtonContent: {
+		flexDirection: "row",
+		alignItems: "center",
+	},
+	floatingButtonText: {
+		color: "#fff",
+		fontSize: 16,
+		marginLeft: 8,
+	},
 });
 
 export default ShoppingList;

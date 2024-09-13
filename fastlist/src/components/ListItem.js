@@ -1,5 +1,6 @@
 import React from "react";
 import { TouchableOpacity, View, Button, Text, StyleSheet } from "react-native";
+import Icon from "react-native-vector-icons/FontAwesome";
 
 const ListItem = ({ data, onDelete }) => {
 	return (
@@ -7,7 +8,9 @@ const ListItem = ({ data, onDelete }) => {
 			<Text style={styles.itemP2}>x {data.quantity}</Text>
 			<Text style={styles.itemP1}>{data.name}</Text>
 			<Text style={styles.itemP2}>R$ {data.value}</Text>
-			<Button title="Delete" onPress={onDelete} />
+			<TouchableOpacity onPress={onDelete}>
+				<Icon name="trash" size={20} color="#B22222" />
+			</TouchableOpacity>
 		</View>
 	);
 };

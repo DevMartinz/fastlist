@@ -3,15 +3,16 @@ import {
 	View,
 	FlatList,
 	Text,
-	Button,
 	TextInput,
 	StyleSheet,
 	Modal,
-	TouchableOpacity, // para usar no item
+	TouchableOpacity,
 } from "react-native";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import ListItem from "../components/ListItem"; // Importe o componente ListItem
+import CustomButton from "../components/CustomButton"; // Importe o CustomButton
+import Icon from "react-native-vector-icons/Ionicons";
 
 const ListItemsScreen = ({ route }) => {
 	const { listId } = route.params;
@@ -70,14 +71,12 @@ const ListItemsScreen = ({ route }) => {
 			hasError = true;
 		}
 
-		// Se algum campo estiver vazio, não envia os dados
 		if (hasError) {
 			return;
 		}
 
 		const token = await AsyncStorage.getItem("userToken");
 
-		// Remove o prefixo 'R$' e os pontos do valor antes de enviar para o backend
 		const cleanedValue = itemValue
 			.replace("R$ ", "")
 			.replace(/\./g, "")
@@ -85,7 +84,7 @@ const ListItemsScreen = ({ route }) => {
 
 		try {
 			if (selectedItemId) {
-				// Se um item foi selecionado, estamos editando
+				// Editando item
 				await axios.put(
 					`http://192.168.100.7:8000/api/products/${selectedItemId}`,
 					{
@@ -98,7 +97,7 @@ const ListItemsScreen = ({ route }) => {
 					}
 				);
 			} else {
-				// Se nenhum item foi selecionado, estamos adicionando um novo
+				// Adicionando novo item
 				await axios.post(
 					`http://192.168.100.7:8000/api/shopping-lists/${listId}/products`,
 					{
@@ -112,14 +111,13 @@ const ListItemsScreen = ({ route }) => {
 				);
 			}
 
-			// Limpa os campos e fecha o modal após o envio
 			setItemName("");
 			setItemValue("");
 			setItemQuantity("");
 			setModalVisible(false);
 			setSelectedItemId(null);
 
-			// Refresh items
+			// Atualiza a lista de itens
 			const response = await axios.get(
 				`http://192.168.100.7:8000/api/shopping-lists/${listId}/products`,
 				{
@@ -147,7 +145,7 @@ const ListItemsScreen = ({ route }) => {
 				headers: { Authorization: `Bearer ${token}` },
 			});
 
-			// Atualizar a lista de itens após a exclusão
+			// Atualiza a lista de itens após exclusão
 			const response = await axios.get(
 				`http://192.168.100.7:8000/api/shopping-lists/${listId}/products`,
 				{
@@ -161,33 +159,33 @@ const ListItemsScreen = ({ route }) => {
 	};
 
 	const handleCloseModal = () => {
-		setItemName(""); // Limpa o campo de nome
-		setItemValue(""); // Limpa o campo de valor
-		setItemQuantity(""); // Limpa o campo de quantidade
-		setSelectedItemId(null); // Remove o ID selecionado
-		setModalVisible(false); // Fecha o modal
+		setItemName("");
+		setItemValue("");
+		setItemQuantity("");
+		setSelectedItemId(null);
+		setModalVisible(false);
 	};
 
 	const formatCurrency = (value) => {
-		let newValue = value.replace(/\D/g, ""); // Remove qualquer caractere que não seja dígito
-		newValue = (newValue / 100).toFixed(2) + ""; // Divide por 100 para adicionar duas casas decimais
-		newValue = newValue.replace(".", ","); // Troca o ponto por vírgula
-		newValue = newValue.replace(/\B(?=(\d{3})+(?!\d))/g, "."); // Adiciona o ponto como separador de milhar
-		return newValue ? `R$ ${newValue}` : ""; // Adiciona o prefixo 'R$' se houver valor
+		let newValue = value.replace(/\D/g, "");
+		newValue = (newValue / 100).toFixed(2) + "";
+		newValue = newValue.replace(".", ",");
+		newValue = newValue.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+		return newValue ? `R$ ${newValue}` : "";
 	};
 
 	return (
 		<View style={styles.container}>
-			<Button
-				title="Add Item"
+			{/* <CustomButton
+				title="Adicionar Item"
 				onPress={() => {
 					setItemName("");
 					setItemValue("");
 					setItemQuantity("");
-					setSelectedItemId(null); // Remove qualquer item selecionado
+					setSelectedItemId(null);
 					setModalVisible(true);
 				}}
-			/>
+			/> */}
 			<FlatList
 				data={items}
 				renderItem={({ item }) => (
@@ -198,45 +196,65 @@ const ListItemsScreen = ({ route }) => {
 				keyExtractor={(item) => item.id.toString()}
 			/>
 
+			<TouchableOpacity
+				style={styles.floatingButton}
+				onPress={() => setModalVisible(true)}
+			>
+				<View style={styles.floatingButtonContent}>
+					<Icon name="add" size={24} color="#fff" />
+					<Text style={styles.floatingButtonText}>Novo Item</Text>
+				</View>
+			</TouchableOpacity>
+
 			<Modal
 				visible={modalVisible}
 				transparent={true}
 				animationType="slide"
 				onRequestClose={handleCloseModal}
 			>
-				<View style={styles.modalContainer}>
-					<TextInput
-						placeholder="Nome do Produto"
-						value={itemName}
-						onChangeText={setItemName}
-						style={styles.input}
-					/>
-					{errorName ? <Text style={styles.errorText}>{errorName}</Text> : null}
-					<TextInput
-						placeholder="R$ 0,00"
-						value={itemValue}
-						onChangeText={(value) => setItemValue(formatCurrency(value))}
-						keyboardType="numeric"
-						style={styles.input}
-					/>
-					{errorValue ? (
-						<Text style={styles.errorText}>{errorValue}</Text>
-					) : null}
-					<TextInput
-						placeholder="Quantidade"
-						value={itemQuantity}
-						onChangeText={setItemQuantity}
-						keyboardType="numeric"
-						style={styles.input}
-					/>
-					{errorQuantity ? (
-						<Text style={styles.errorText}>{errorQuantity}</Text>
-					) : null}
-					<Button
-						title={selectedItemId ? "Update Item" : "Add Item"}
-						onPress={handleAddItem}
-					/>
-					<Button title="Cancel" onPress={handleCloseModal} />
+				<View style={styles.modalOverlay}>
+					<View style={styles.modalContainer}>
+						<TextInput
+							placeholder="Nome do Produto"
+							value={itemName}
+							onChangeText={setItemName}
+							style={styles.input}
+						/>
+						{errorName ? (
+							<Text style={styles.errorText}>{errorName}</Text>
+						) : null}
+						<TextInput
+							placeholder="R$ 0,00"
+							value={itemValue}
+							onChangeText={(value) => setItemValue(formatCurrency(value))}
+							keyboardType="numeric"
+							style={styles.input}
+						/>
+						{errorValue ? (
+							<Text style={styles.errorText}>{errorValue}</Text>
+						) : null}
+						<TextInput
+							placeholder="Quantidade"
+							value={itemQuantity}
+							onChangeText={setItemQuantity}
+							keyboardType="numeric"
+							style={styles.input}
+						/>
+						{errorQuantity ? (
+							<Text style={styles.errorText}>{errorQuantity}</Text>
+						) : null}
+						<View style={styles.modalButtons}>
+							<View style={styles.buttonWrapper}>
+								<CustomButton
+									title={selectedItemId ? "Atualizar Item" : "Adicionar Item"}
+									onPress={handleAddItem}
+								/>
+							</View>
+							<View style={styles.buttonWrapper}>
+								<CustomButton title="Cancelar" onPress={handleCloseModal} />
+							</View>
+						</View>
+					</View>
 				</View>
 			</Modal>
 		</View>
@@ -253,19 +271,64 @@ const styles = StyleSheet.create({
 		marginBottom: 10,
 	},
 	modalContainer: {
-		flex: 1,
-		justifyContent: "center",
-		alignItems: "center",
-		backgroundColor: "rgba(0,0,0,0.5)",
+		width: 300,
+		padding: 20,
+		backgroundColor: "#fff", // Fundo branco para o modal
+		borderRadius: 8,
+		shadowColor: "#000",
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.25,
+		shadowRadius: 4,
+		elevation: 5,
 	},
 	input: {
 		height: 40,
-		width: 300,
+		width: "100%",
 		borderColor: "gray",
 		borderWidth: 1,
 		marginBottom: 12,
 		paddingHorizontal: 8,
 		backgroundColor: "#fff",
+	},
+	errorText: {
+		color: "red",
+		marginBottom: 10,
+	},
+	modalButtons: {
+		flexDirection: "row",
+		marginTop: 10,
+	},
+	buttonWrapper: {
+		flex: 1,
+		marginHorizontal: 5,
+	},
+	modalOverlay: {
+		flex: 1,
+		justifyContent: "center",
+		alignItems: "center",
+		backgroundColor: "rgba(0, 0, 0, 0.5)", // Fundo escuro semi-transparente
+	},
+	floatingButton: {
+		position: "absolute",
+		bottom: 45,
+		right: 15,
+		backgroundColor: "#4682B4",
+		flexDirection: "row",
+		borderRadius: 28,
+		justifyContent: "center",
+		alignItems: "center",
+		paddingHorizontal: 16,
+		paddingVertical: 10,
+		elevation: 4,
+	},
+	floatingButtonContent: {
+		flexDirection: "row",
+		alignItems: "center",
+	},
+	floatingButtonText: {
+		color: "#fff",
+		fontSize: 16,
+		marginLeft: 8,
 	},
 });
 
