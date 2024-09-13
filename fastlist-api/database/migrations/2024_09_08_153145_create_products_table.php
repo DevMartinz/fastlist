@@ -18,6 +18,7 @@ class CreateProductsTable extends Migration
             $table->string('name');
             $table->float('value');
             $table->integer('quantity');
+            $table->string('image')->nullable(); // Permite armazenar o caminho da imagem
             $table->foreignId('shopping_list_id') ->constrained('shopping_lists') ->onDelete('cascade');
             $table->timestamps();
         });

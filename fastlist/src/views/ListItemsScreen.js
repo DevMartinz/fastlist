@@ -7,12 +7,14 @@ import {
 	StyleSheet,
 	Modal,
 	TouchableOpacity,
+	Image,
 } from "react-native";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import ListItem from "../components/ListItem"; // Importe o componente ListItem
 import CustomButton from "../components/CustomButton"; // Importe o CustomButton
 import Icon from "react-native-vector-icons/Ionicons";
+import * as ImagePicker from "expo-image-picker";
 
 const ListItemsScreen = ({ route }) => {
 	const { listId } = route.params;
@@ -25,9 +27,21 @@ const ListItemsScreen = ({ route }) => {
 	const [errorName, setErrorName] = useState("");
 	const [errorValue, setErrorValue] = useState("");
 	const [errorQuantity, setErrorQuantity] = useState("");
+	const [itemImage, setItemImage] = useState(null);
 
 	useEffect(() => {
 		const fetchItems = async () => {
+			// Solicitar permissões para acessar a biblioteca de imagens
+			const getPermissions = async () => {
+				const { status } =
+					await ImagePicker.requestMediaLibraryPermissionsAsync();
+				if (status !== "granted") {
+					alert(
+						"Desculpe, precisamos de permissão para acessar a biblioteca de imagens."
+					);
+				}
+			};
+			getPermissions();
 			const token = await AsyncStorage.getItem("userToken");
 			try {
 				const response = await axios.get(
@@ -77,36 +91,46 @@ const ListItemsScreen = ({ route }) => {
 
 		const token = await AsyncStorage.getItem("userToken");
 
-		const cleanedValue = itemValue
-			.replace("R$ ", "")
-			.replace(/\./g, "")
-			.replace(",", ".");
+		const formData = new FormData();
+		formData.append("name", itemName);
+		formData.append(
+			"value",
+			itemValue.replace("R$ ", "").replace(/\./g, "").replace(",", ".")
+		);
+		formData.append("quantity", itemQuantity);
+
+		// Verifica se uma imagem foi selecionada
+		if (itemImage) {
+			formData.append("image", {
+				uri: itemImage.uri,
+				type: "image/jpeg" || "image/png" || "image/jpg", // Ajuste o tipo conforme necessário
+				name: itemImage.uri.split("/").pop(), // Nome da imagem
+			});
+		}
 
 		try {
 			if (selectedItemId) {
 				// Editando item
 				await axios.put(
 					`http://192.168.100.7:8000/api/products/${selectedItemId}`,
+					formData,
 					{
-						name: itemName,
-						value: cleanedValue,
-						quantity: itemQuantity,
-					},
-					{
-						headers: { Authorization: `Bearer ${token}` },
+						headers: {
+							Authorization: `Bearer ${token}`,
+							"Content-Type": "multipart/form-data",
+						},
 					}
 				);
 			} else {
 				// Adicionando novo item
 				await axios.post(
 					`http://192.168.100.7:8000/api/shopping-lists/${listId}/products`,
+					formData,
 					{
-						name: itemName,
-						value: cleanedValue,
-						quantity: itemQuantity,
-					},
-					{
-						headers: { Authorization: `Bearer ${token}` },
+						headers: {
+							Authorization: `Bearer ${token}`,
+							"Content-Type": "multipart/form-data",
+						},
 					}
 				);
 			}
@@ -114,6 +138,7 @@ const ListItemsScreen = ({ route }) => {
 			setItemName("");
 			setItemValue("");
 			setItemQuantity("");
+			setItemImage(null); // Limpa a imagem
 			setModalVisible(false);
 			setSelectedItemId(null);
 
@@ -135,6 +160,7 @@ const ListItemsScreen = ({ route }) => {
 		setItemName(item.name);
 		setItemValue(item.value.toString());
 		setItemQuantity(item.quantity.toString());
+		setItemImage({ uri: `http://192.168.100.7:8000/storage/${item.image}` }); // Defina a URL da imagem
 		setModalVisible(true);
 	};
 
@@ -166,6 +192,22 @@ const ListItemsScreen = ({ route }) => {
 		setModalVisible(false);
 	};
 
+	const handleSelectImage = async () => {
+		try {
+			let result = await ImagePicker.launchImageLibraryAsync({
+				mediaTypes: ImagePicker.MediaTypeOptions.Images,
+				allowsEditing: true,
+				aspect: [4, 3],
+				quality: 1,
+			});
+
+			if (!result.canceled) {
+				setItemImage(result.assets[0]); // Salva a imagem selecionada
+			}
+		} catch (error) {
+			console.error("Erro ao selecionar imagem:", error);
+		}
+	};
 	const formatCurrency = (value) => {
 		let newValue = value.replace(/\D/g, "");
 		newValue = (newValue / 100).toFixed(2) + "";
@@ -243,6 +285,23 @@ const ListItemsScreen = ({ route }) => {
 						{errorQuantity ? (
 							<Text style={styles.errorText}>{errorQuantity}</Text>
 						) : null}
+						<TouchableOpacity
+							onPress={handleSelectImage}
+							style={styles.imageButton}
+						>
+							<Text style={styles.imageButtonText}>
+								{itemImage ? "Alterar Imagem" : "Selecionar Imagem"}
+							</Text>
+						</TouchableOpacity>
+
+						{/* Exibe a imagem selecionada */}
+						{itemImage && (
+							<Image
+								source={{ uri: itemImage.uri }}
+								style={styles.previewImage}
+							/>
+						)}
+
 						<View style={styles.modalButtons}>
 							<View style={styles.buttonWrapper}>
 								<CustomButton
@@ -293,6 +352,22 @@ const styles = StyleSheet.create({
 	errorText: {
 		color: "red",
 		marginBottom: 10,
+	},
+	imageButton: {
+		marginVertical: 10,
+		backgroundColor: "#4682B4",
+		padding: 10,
+		borderRadius: 5,
+		alignItems: "center",
+	},
+	imageButtonText: {
+		color: "#fff",
+		fontSize: 16,
+	},
+	previewImage: {
+		width: 100,
+		height: 100,
+		marginVertical: 10,
 	},
 	modalButtons: {
 		flexDirection: "row",

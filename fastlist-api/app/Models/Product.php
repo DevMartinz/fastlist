@@ -13,7 +13,8 @@ class Product extends Model
         'name',
         'value',
         'quantity',
-        'shopping_list_id', // Adicione isso para preencher o campo ao criar o produto
+        'shopping_list_id',
+        'image'
     ];
 
     public function shoppingList(){
